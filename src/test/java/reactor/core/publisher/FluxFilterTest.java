@@ -30,7 +30,7 @@ public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.filter(d -> {
-					throw new RuntimeException("test");
+					throw new RuntimeException("dropped");
 				}), Fuseable.ANY)
 		);
 	}

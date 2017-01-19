@@ -29,7 +29,7 @@ public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<Strin
 	protected List<Scenario<String, String>> errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.distinctUntilChanged(d -> {
-					throw new RuntimeException("test");
+					throw new RuntimeException("dropped");
 				})),
 
 				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.NONE,

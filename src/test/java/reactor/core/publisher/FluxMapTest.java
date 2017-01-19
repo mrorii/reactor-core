@@ -30,7 +30,7 @@ public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 	protected List<Scenario<String, Integer>> errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> {
-					throw new RuntimeException("test");
+					throw new RuntimeException("dropped");
 				}), Fuseable.ANY),
 
 				Scenario.from(f -> f.map(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))

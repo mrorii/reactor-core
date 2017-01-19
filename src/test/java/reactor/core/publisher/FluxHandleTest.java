@@ -42,10 +42,10 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.handle((s, d) -> {
-					throw new RuntimeException("test");
+					throw new RuntimeException("dropped");
 				}), Fuseable.ANY),
 
-				Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("test"))),
+				Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("dropped"))),
 						Fuseable.ANY),
 
 				Scenario.from(f -> f.handle((s, d) -> {
@@ -528,70 +528,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		                        .filter(t -> true))
 		            .expectFusion(Fuseable.SYNC)
 		            .verifyComplete();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failFusedStateTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.error(new RuntimeException("test"));
-		}))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) s);
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            try {
-				            assertThat(qs.poll()).isNull();
-				            Assert.fail();
-			            }
-			            catch (Exception e) {
-				            assertThat(e).hasMessage("test");
-			            }
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failFusedStateConditionalTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.error(new RuntimeException("test"));
-		})
-		                      .filter(d -> true))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) ((Receiver) s).upstream());
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            assertThat(((Trackable) qs).getError()).hasMessage("test");
-			            try {
-				            assertThat(qs.poll()).isNull();
-				            Assert.fail();
-			            }
-			            catch (Exception e) {
-				            assertThat(e).hasMessage("test");
-			            }
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
 	}
 
 	@Test
