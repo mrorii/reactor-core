@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -275,33 +276,17 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 	//errorInOperatorCallbackVerification
 	protected List<Scenario<I, O>> errorInOperatorCallback() {
-		return Arrays.asList(Scenario.from(this::errorInOperatorCallback));
-	}
-
-	@SuppressWarnings("unchecked")
-	protected Flux<O> errorInOperatorCallback(Flux<I> f) {
-		return (Flux<O>) f.doOnNext(d -> {
-			throw new RuntimeException("test");
-		});
-	}
-
-	protected Flux<O> simpleAssert(Flux<I> f) {
-		return errorFromUpstreamFailure(f);
+		return Collections.emptyList();
 	}
 
 	//assert
 	protected List<Scenario<I, O>> simpleAssert() {
-		return Arrays.asList(Scenario.from(this::simpleAssert));
-	}
-
-	@SuppressWarnings("unchecked")
-	protected Flux<O> errorFromUpstreamFailure(Flux<I> f) {
-		return (Flux<O>) f;
+		return errorFromUpstreamFailure();
 	}
 
 	//errorFromUpstreamFailureVerification
 	protected List<Scenario<I, O>> errorFromUpstreamFailure() {
-		return Arrays.asList(Scenario.from(this::errorFromUpstreamFailure));
+		return Collections.emptyList();
 	}
 
 	//common source emitting once

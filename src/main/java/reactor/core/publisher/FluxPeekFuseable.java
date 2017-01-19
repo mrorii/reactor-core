@@ -161,7 +161,10 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				Operators.onNextDropped(t);
 				return;
 			}
-			if (sourceMode == NONE) {
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				if (parent.onNextCall() != null) {
 					try {
 						parent.onNextCall()
@@ -173,9 +176,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					}
 				}
 				actual.onNext(t);
-			}
-			else if (sourceMode == ASYNC) {
-				actual.onNext(null);
 			}
 		}
 
@@ -392,7 +392,10 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				Operators.onNextDropped(t);
 				return;
 			}
-			if (sourceMode == NONE) {
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				if (parent.onNextCall() != null) {
 					try {
 						parent.onNextCall()
@@ -405,9 +408,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 				actual.onNext(t);
 			}
-			else if (sourceMode == ASYNC) {
-				actual.onNext(null);
-			}
 		}
 
 		@Override
@@ -416,7 +416,10 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				Operators.onNextDropped(t);
 				return false;
 			}
-			if (sourceMode == NONE) {
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				if (parent.onNextCall() != null) {
 					try {
 						parent.onNextCall()
@@ -428,9 +431,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					}
 				}
 				return actual.tryOnNext(t);
-			}
-			else if (sourceMode == ASYNC) {
-				actual.onNext(null);
 			}
 			return true;
 		}

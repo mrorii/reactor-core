@@ -41,8 +41,10 @@ import static reactor.core.scheduler.Schedulers.parallel;
 public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected Flux<String> simpleAssert(Flux<String> f) {
-		return f.doOnNext(d -> {});
+	protected List<Scenario<String, String>> simpleAssert() {
+		return Arrays.asList(
+				Scenario.from(f -> f.doOnNext(d -> {}))
+		);
 	}
 
 	@Override

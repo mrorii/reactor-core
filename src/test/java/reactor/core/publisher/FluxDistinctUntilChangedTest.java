@@ -16,10 +16,30 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDistinctUntilChangedTest {
+public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.distinctUntilChanged(d -> {
+					throw new RuntimeException("test");
+				}))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>>  errorFromUpstreamFailure() {
+		return Arrays.asList(
+				Scenario.from(f -> f.distinctUntilChanged())
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

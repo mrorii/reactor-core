@@ -27,11 +27,6 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 
 	@Override
-	protected Flux<Integer> simpleAssert(Flux<String> f) {
-		return f.map(d -> 1);
-	}
-
-	@Override
 	protected List<Scenario<String, Integer>> errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> {
@@ -41,8 +36,10 @@ public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 	}
 
 	@Override
-	protected Flux<Integer> errorFromUpstreamFailure(Flux<String> f) {
-		return f.map(d -> 1);
+	protected List<Scenario<String, Integer>> errorFromUpstreamFailure() {
+		return Arrays.asList(
+				Scenario.from(f -> f.map(d -> 1))
+		);
 	}
 
 	Flux<Integer> just = Flux.just(1);
