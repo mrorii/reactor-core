@@ -32,7 +32,8 @@ public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<Strin
 					throw new RuntimeException("test");
 				})),
 
-				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.NONE,
+						step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
