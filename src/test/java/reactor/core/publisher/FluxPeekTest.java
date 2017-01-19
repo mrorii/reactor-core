@@ -38,7 +38,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
-public class FluxPeekTest extends FluxOperatorTest<String, String> {
+public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
 	protected List<Scenario<String, String>> errorInOperatorCallback() {

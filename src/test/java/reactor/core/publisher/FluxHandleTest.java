@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
-public class FluxHandleTest extends FluxOperatorTest<String, String> {
+public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
 	protected List<Scenario<String, String>> errorInOperatorCallback() {
