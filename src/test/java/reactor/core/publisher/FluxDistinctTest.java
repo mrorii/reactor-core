@@ -31,7 +31,9 @@ public class FluxDistinctTest extends AbstractFluxOperatorTest<String, String> {
 		return Arrays.asList(
 				Scenario.from(f -> f.distinct(d -> {
 					throw new RuntimeException("test");
-				}), Fuseable.ANY)
+				}), Fuseable.ANY),
+
+				Scenario.from(f -> f.distinct(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
 		);
 	}
 

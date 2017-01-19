@@ -51,7 +51,12 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				Scenario.from(f -> f.handle((s, d) -> {
 					d.next("test");
 					d.next("test2");
-				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)));
+				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					d.next(null);
+				}), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+		);
 	}
 
 	@Override
@@ -291,6 +296,18 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				                        d.complete();
 			                        }
 			                        else {
+				                        d.next(s);
+			                        }
+		                        }), 3)
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void handleFusedTryNext2() {
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .handle((s, d) -> {
+			                        if (!"test3".equals(s)) {
 				                        d.next(s);
 			                        }
 		                        }), 3)

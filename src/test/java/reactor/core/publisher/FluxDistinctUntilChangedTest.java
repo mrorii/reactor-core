@@ -30,7 +30,9 @@ public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<Strin
 		return Arrays.asList(
 				Scenario.from(f -> f.distinctUntilChanged(d -> {
 					throw new RuntimeException("test");
-				}))
+				})),
+
+				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
 		);
 	}
 

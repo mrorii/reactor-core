@@ -31,7 +31,9 @@ public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> {
 					throw new RuntimeException("test");
-				}), Fuseable.ANY)
+				}), Fuseable.ANY),
+
+				Scenario.from(f -> f.map(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
