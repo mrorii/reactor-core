@@ -38,18 +38,49 @@ import static reactor.core.Fuseable.SYNC;
 public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				Scenario.from(f -> f.handle((s, d) -> {
+					if (multiItem(2).equals(s)) {
+						d.complete();
+					}
+					else {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(0), multiItem(1))
+				                              .verifyComplete()),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					if (!multiItem(2).equals(s)) {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(0), multiItem(1))
+				                              .verifyComplete()),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					if (multiItem(2).equals(s)) {
+						d.complete();
+					}
+					else if (multiItem(1).equals(s)) {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(1)).verifyComplete())
+		);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.handle((s, d) -> {
-					throw new RuntimeException("dropped");
+					throw exception();
 				}), Fuseable.ANY),
 
-				Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("dropped"))),
+				Scenario.from(f -> f.handle((s, d) -> d.error(exception())),
 						Fuseable.ANY),
 
 				Scenario.from(f -> f.handle((s, d) -> {
-					d.next("test");
-					d.next("test2");
+					d.next(multiItem(0));
+					d.next(multiItem(1));
 				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)),
 
 				Scenario.from(f -> f.handle((s, d) -> {
@@ -64,10 +95,16 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				Scenario.from(f -> f.handle((data, s) -> {})),
 
 				Scenario.from(f -> f.handle((data, s) -> {
-					if ("test3".equals(data)) {
+					if (multiItem(2).equals(data)) {
 						s.complete();
 					}
 					else {
+						s.next(data);
+					}
+				})),
+
+				Scenario.from(f -> f.handle((data, s) -> {
+					if (!multiItem(2).equals(data)) {
 						s.next(data);
 					}
 				}))
@@ -251,7 +288,8 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	@Test
 	public void handleConditionalFusedCancelBoth() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .as(this::passThrough), 2)
+		                        .as(this::passThrough)
+		                        .filter(t -> true), 2)
 		            .expectNext("test", "test2")
 		            .thenCancel()
 		            .verify();
@@ -286,10 +324,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .expectNext("test", "test2")
 		            .thenCancel()
 		            .verify();
-	}
-
-	Flux<String> passThrough(Flux<String> f) {
-		return f.handle((a, b) -> b.next(a));
 	}
 
 	@Test
@@ -338,6 +372,12 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
+	Flux<String> passThrough(Flux<String> f) {
+		return f.handle((a, b) -> b.next(a));
+	}
+
+
+
 	Flux<String> filterTest2(Flux<String> f) {
 		return f.handle((a, b) -> {
 			b.next(a);
@@ -384,9 +424,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	@SuppressWarnings("unchecked")
 	public void handleFusedStateTargetAsync() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
+		testUnicastSource(up);
 		StepVerifier.create(up.handle((s, d) -> {
 			d.complete();
 		}))
@@ -409,9 +447,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	@SuppressWarnings("unchecked")
 	public void handleFusedStateTargetConditionalAsync() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
+		testUnicastSource(up);
 		StepVerifier.create(up.handle((s, d) -> {
 			d.complete();
 		})

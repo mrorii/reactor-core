@@ -29,9 +29,9 @@ public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> 
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.scan(singleItem(), (a, b) -> {
-					throw new RuntimeException("dropped");
+					throw exception();
 				}), Fuseable.NONE, step -> step.expectNext(singleItem())
-				                               .verifyErrorMessage("dropped")),
+				                               .verifyErrorMessage("test")),
 
 				Scenario.from(f -> f.scan(singleItem(), (a, b) -> null), Fuseable.NONE, step -> step
 						.expectNext(singleItem())
@@ -41,16 +41,16 @@ public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> 
 						.verifyError(NullPointerException.class)),
 
 				Scenario.from(f -> f.scanWith(() -> {
-							throw new RuntimeException("dropped");
+							throw exception();
 						},
 						(a, b) -> b), Fuseable.NONE, step -> step
-								.verifyErrorMessage("dropped"))
+								.verifyErrorMessage("test"))
 
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
 				Scenario.from(f -> f.scan(singleItem(), (a, b) -> b))
 		);

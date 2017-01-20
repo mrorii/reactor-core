@@ -54,9 +54,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		static <I, O> Scenario<I, O> from(Function<Flux<I>, Flux<O>> scenario,
 				int fusionMode,
 				Consumer<StepVerifier.Step<O>> verifier) {
-			return from(scenario,
-					fusionMode,
-					(Flux<I>) Flux.just("dropped", "test2", "test3"),
+			return from(scenario, fusionMode, null,
 					verifier);
 		}
 
@@ -161,7 +159,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			 .subscribe();
 
 			AtomicReference<Trackable> ref = new AtomicReference<>();
-			f = scenario.finiteSource()
+			f = finiteSourceOrDefault(scenario)
 			            .doOnSubscribe(s -> {
 				            Object _s =
 						            ((Producer) ((Producer) s).downstream()).downstream();
@@ -225,33 +223,34 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
 
 			if (verifier == null) {
-				verifier = step -> step.verifyErrorMessage("dropped");
+				String m = exception().getMessage();
+				verifier = step -> step.verifyErrorMessage(m);
 			}
 
 			int fusion = scenario.fusionMode();
 
-			verifier.accept(this.operatorErrorVerifier(scenario));
-
-			verifier.accept(this.operatorErrorVerifierFused(scenario));
+			verifier.accept(this.operatorNextVerifierBackpressured(scenario));
+			verifier.accept(this.operatorNextVerifier(scenario));
+			verifier.accept(this.operatorNextVerifierFused(scenario));
 
 			if ((fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.operatorErrorVerifierFusedSync(scenario));
-				verifier.accept(this.operatorErrorVerifierFusedConditionalSync(scenario));
+				verifier.accept(this.operatorNextVerifierFusedSync(scenario));
+				verifier.accept(this.operatorNextVerifierFusedConditionalSync(scenario));
 			}
 
 			if ((fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.operatorErrorVerifierFusedAsync(scenario));
-				verifier.accept(this.operatorErrorVerifierFusedConditionalAsync(scenario));
-				this.operatorErrorVerifierFusedAsyncState(scenario);
-				this.operatorErrorVerifierFusedConditionalAsyncState(scenario);
+				verifier.accept(this.operatorNextVerifierFusedAsync(scenario));
+				verifier.accept(this.operatorNextVerifierFusedConditionalAsync(scenario));
+				this.operatorNextVerifierFusedAsyncState(scenario);
+				this.operatorNextVerifierFusedConditionalAsyncState(scenario);
 			}
 
-			verifier.accept(this.operatorErrorVerifierTryNext(scenario));
-			verifier.accept(this.operatorErrorVerifierBothConditional(scenario));
-			verifier.accept(this.operatorErrorVerifierConditionalTryNext(scenario));
-			verifier.accept(this.operatorErrorVerifierFusedTryNext(scenario));
-			verifier.accept(this.operatorErrorVerifierFusedBothConditional(scenario));
-			verifier.accept(this.operatorErrorVerifierFusedBothConditionalTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierBothConditional(scenario));
+			verifier.accept(this.operatorNextVerifierConditionalTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierFusedTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierFusedBothConditional(scenario));
+			verifier.accept(this.operatorNextVerifierFusedBothConditionalTryNext(scenario));
 
 			resetHooks();
 		}
@@ -267,7 +266,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
 
 			if (verifier == null) {
-				verifier = step -> step.verifyErrorMessage("dropped");
+				String m = exception().getMessage();
+				verifier = step -> step.verifyErrorMessage(m);
 			}
 
 			verifier.accept(this.operatorErrorSourceVerifier(scenario));
@@ -291,20 +291,46 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
 
 			if (verifier == null) {
+				verifier = defaultThreeNextExpectations(scenario);
 				continue;
 			}
 
-			verifier.accept(this.operatorErrorSourceVerifier(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFused(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditional(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
+			int fusion = scenario.fusionMode();
+
+			verifier.accept(this.operatorNextVerifierBackpressured(scenario));
+			verifier.accept(this.operatorNextVerifier(scenario));
+			verifier.accept(this.operatorNextVerifierFused(scenario));
+
+			if ((fusion & Fuseable.SYNC) != 0) {
+				verifier.accept(this.operatorNextVerifierFusedSync(scenario));
+				verifier.accept(this.operatorNextVerifierFusedConditionalSync(scenario));
+			}
+
+			if ((fusion & Fuseable.ASYNC) != 0) {
+				verifier.accept(this.operatorNextVerifierFusedAsync(scenario));
+				verifier.accept(this.operatorNextVerifierFusedConditionalAsync(scenario));
+				this.operatorNextVerifierFusedAsyncState(scenario);
+				this.operatorNextVerifierFusedConditionalAsyncState(scenario);
+			}
+
+			verifier.accept(this.operatorNextVerifierTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierBothConditional(scenario));
+			verifier.accept(this.operatorNextVerifierConditionalTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierFusedTryNext(scenario));
+			verifier.accept(this.operatorNextVerifierFusedBothConditional(scenario));
+			verifier.accept(this.operatorNextVerifierFusedBothConditionalTryNext(scenario));
 
 			resetHooks();
 		}
 	}
 
+	@SuppressWarnings("unchecked") //default check identity
+	protected Consumer<StepVerifier.Step<O>> defaultThreeNextExpectations(Scenario<I, O> scenario) {
+		return step -> step.expectNext((O) multiItem(0))
+		                   .expectNext((O) multiItem(1))
+		                   .expectNext((O) multiItem(2))
+		                   .verifyComplete();
+	}
 
 	//errorInOperatorCallbackVerification
 	protected List<Scenario<I, O>> scenarios_errorInOperatorCallback() {
@@ -318,34 +344,73 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 	//assert
 	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
-		return scenarios_errorFromUpstreamFailure();
+		return scenarios_threeNextAndComplete();
 	}
 
 	//errorFromUpstreamFailureVerification
 	protected List<Scenario<I, O>> scenarios_errorFromUpstreamFailure() {
-		return Collections.emptyList();
+		return scenarios_threeNextAndComplete();
 	}
 
-	//common source emitting once
-	@SuppressWarnings("unchecked")
+	//common source emitting
 	protected void testPublisherSource(TestPublisher<I> ts) {
-		ts.next(singleItem());
-		ts.next(singleItem());
+		ts.emit(multiItem(0), multiItem(1), multiItem(2));
+	}
+
+	//common fused source N prefilled
+	protected void testUnicastSource(UnicastProcessor<I> ts) {
+		ts.onNext(multiItem(0));
+		ts.onNext(multiItem(1));
+		ts.onNext(multiItem(2));
+		ts.onComplete();
+	}
+
+	//common first item
+	@SuppressWarnings("unchecked")
+	protected I singleItem() {
+		return (I) "test";
+	}
+
+	//common n unused item or dropped
+	@SuppressWarnings("unchecked")
+	protected I multiItem(int i) {
+		if (i == 0) {
+			return singleItem();
+		}
+		return (I) ("test" + i);
 	}
 
 	//common first unused item or dropped
 	@SuppressWarnings("unchecked")
-	protected I singleItem() {
+	protected I droppedItem() {
 		return (I) "dropped";
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifier(Scenario<I, O> scenario) {
-		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("dropped"));
-		return StepVerifier.create(scenario.finiteSource().hide()
-		                                                 .as(scenario.body()), 2);
+	//unprocessable exception (dropped)
+	protected RuntimeException droppedException() {
+		return new RuntimeException("dropped");
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierTryNext(Scenario<I, O> scenario) {
+	//exception
+	protected RuntimeException exception() {
+		return new RuntimeException("test");
+	}
+
+	protected Flux<I> finiteSourceOrDefault(Scenario<I, O> scenario) {
+		Flux<I> source = scenario.finiteSource();
+		if (source == null) {
+			return Flux.just(multiItem(0), multiItem(1), multiItem(2));
+		}
+		return source;
+	}
+
+	final StepVerifier.Step<O> operatorNextVerifierBackpressured(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).hide()
+		                                                          .as(scenario.body()),
+				3);
+	}
+
+	final StepVerifier.Step<O> operatorNextVerifierTryNext(Scenario<I, O> scenario) {
 		TestPublisher<I> ts = TestPublisher.create();
 
 		return StepVerifier.create(ts.flux()
@@ -359,22 +424,23 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		AtomicBoolean errorDropped = new AtomicBoolean();
 		AtomicBoolean nextDropped = new AtomicBoolean();
 
+		String dropped = droppedException().getMessage();
 		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage("dropped");
+			assertThat(e).hasMessage(dropped);
 			errorDropped.set(true);
 		});
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(ts.flux()
 		                             .as(scenario.body()))
 		                   .then(() -> {
-			                   ts.error(new Exception("dropped"));
+			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.error(new Exception("dropped"));
-			                   ts.next(singleItem());
+			                   ts.error(droppedException());
+			                   ts.next(droppedItem());
 			                   ts.complete();
 			                   assertThat(errorDropped.get()).isTrue();
 			                   assertThat(nextDropped.get()).isTrue();
@@ -386,56 +452,51 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 		AtomicBoolean nextDropped = new AtomicBoolean();
 
-		Hooks.onErrorDropped(d -> {
-			assertThat(d).hasMessage("dropped");
-		});
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(ts.flux()
 		                             .hide()
 		                             .as(scenario.body()))
 		                   .then(() -> {
-			                   ts.error(new Exception("dropped"));
+			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.next(singleItem());
+			                   ts.next(droppedItem());
 			                   assertThat(nextDropped.get()).isTrue();
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFused(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
+	final StepVerifier.Step<O> operatorNextVerifierFused(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario)
 		                                   .as(scenario.body()));
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedSync(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
+	final StepVerifier.Step<O> operatorNextVerifierFusedSync(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario)
 		                                   .as(scenario.body()))
 		                   .expectFusion(Fuseable.SYNC);
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedConditionalSync(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
+	final StepVerifier.Step<O> operatorNextVerifierFusedConditionalSync(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario)
 		                                   .as(scenario.body())
 		                                   .filter(d -> true))
 		                   .expectFusion(Fuseable.SYNC);
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedAsync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorNextVerifierFusedAsync(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		return StepVerifier.create(up.as(scenario.body()))
 		                   .expectFusion(Fuseable.ASYNC)
-		                   .then(() -> up.onNext(singleItem()));
+		                   .then(() -> testUnicastSource(up));
 	}
 
 	@SuppressWarnings("unchecked")
-	final void operatorErrorVerifierFusedAsyncState(Scenario<I, O> scenario) {
+	final void operatorNextVerifierFusedAsyncState(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
-		up.onNext(singleItem());
-		up.onNext(singleItem());
-		up.onNext(singleItem());
+		testUnicastSource(up);
 		StepVerifier.create(up.as(scenario.body()))
 		            .consumeSubscriptionWith(s -> {
 			            if (s instanceof Fuseable.QueueSubscription) {
@@ -451,9 +512,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            }
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
-							            "dropped");
+							            exception().getMessage());
+					            assertThat(qs.size()).isEqualTo(2);
 				            }
-				            assertThat(qs.size()).isEqualTo(2);
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
 			            }
@@ -463,11 +524,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	}
 
 	@SuppressWarnings("unchecked")
-	final void operatorErrorVerifierFusedConditionalAsyncState(Scenario<I, O> scenario) {
+	final void operatorNextVerifierFusedConditionalAsyncState(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
-		up.onNext(singleItem());
-		up.onNext(singleItem());
-		up.onNext(singleItem());
+		testUnicastSource(up);
 		StepVerifier.create(up.as(scenario.body())
 		                      .filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
@@ -484,9 +543,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            }
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
-							            "dropped");
+							            exception().getMessage());
+					            assertThat(qs.size()).isEqualTo(2);
 				            }
-				            assertThat(qs.size()).isEqualTo(2);
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
 			            }
@@ -495,17 +554,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		            .verify();
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedConditionalAsync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorNextVerifierFusedConditionalAsync(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		return StepVerifier.create(up.as(scenario.body())
 		                             .filter(d -> true))
 		                   .expectFusion(Fuseable.ASYNC)
-		                   .then(() -> up.onNext(singleItem()));
-	}
-
-	final StepVerifier.Step<O> operatorErrorVerifierFusedTryNext(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
-		                                   .as(scenario.body()), 2);
+		                   .then(() -> testUnicastSource(up));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -513,54 +567,54 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		AtomicBoolean errorDropped = new AtomicBoolean();
 		AtomicBoolean nextDropped = new AtomicBoolean();
+		String dropped = droppedException().getMessage();
 		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage("dropped");
+			assertThat(e).hasMessage(dropped);
 			errorDropped.set(true);
 		});
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(up.as(scenario.body()))
 		                   .then(() -> {
-			                   up.actual.onError(new Exception("dropped"));
+			                   up.actual.onError(exception());
 
 			                   //verify drop path
-			                   up.actual.onError(new Exception("dropped"));
+			                   up.actual.onError(droppedException());
 			                   assertThat(errorDropped.get()).isTrue();
 
-			                   up.actual.onNext(singleItem());
+			                   up.actual.onNext(droppedItem());
 			                   assertThat(nextDropped.get()).isTrue();
 			                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
 				                   nextDropped.set(false);
 				                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-						                   singleItem());
+						                   droppedItem());
 				                   assertThat(nextDropped.get()).isTrue();
 			                   }
 			                   up.actual.onComplete();
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierConditionalTryNext(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
-		                                   .hide()
-		                                   .as(scenario.body())
-		                                   .filter(d -> true), 2);
+	final StepVerifier.Step<O> operatorNextVerifierConditionalTryNext(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).hide()
+		                                                          .as(scenario.body())
+		                                                          .filter(filter -> true),
+				3);
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierBothConditional(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorNextVerifierBothConditional(Scenario<I, O> scenario) {
 		TestPublisher<I> ts = TestPublisher.create();
 
 		return StepVerifier.create(ts.flux()
 		                             .as(scenario.body())
-		                             .filter(d -> true))
+		                             .filter(filter -> true))
 		                   .then(() -> testPublisherSource(ts));
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedBothConditional(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
-		                                   .as(scenario.body())
-		                                   .filter(d -> true));
+	final StepVerifier.Step<O> operatorNextVerifierFusedBothConditional(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body())
+		                                                          .filter(filter -> true));
 	}
 
 	final StepVerifier.Step<O> operatorErrorSourceVerifierConditionalTryNext(Scenario<I, O> scenario) {
@@ -569,23 +623,24 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		AtomicBoolean errorDropped = new AtomicBoolean();
 		AtomicBoolean nextDropped = new AtomicBoolean();
 
+		String dropped = droppedException().getMessage();
 		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage("dropped");
+			assertThat(e).hasMessage(dropped);
 			errorDropped.set(true);
 		});
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(ts.flux()
 		                             .as(scenario.body())
-		                             .filter(d -> true))
+		                             .filter(filter -> true))
 		                   .then(() -> {
-			                   ts.error(new Exception("dropped"));
+			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.error(new Exception("dropped"));
-			                   ts.next(singleItem());
+			                   ts.error(droppedException());
+			                   ts.next(droppedItem());
 			                   ts.complete();
 			                   assertThat(errorDropped.get()).isTrue();
 			                   assertThat(nextDropped.get()).isTrue();
@@ -598,26 +653,26 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		AtomicBoolean nextDropped = new AtomicBoolean();
 
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(ts.flux()
 		                             .hide()
 		                             .as(scenario.body())
-		                             .filter(d -> true))
+		                             .filter(filter -> true))
 		                   .then(() -> {
-			                   ts.error(new Exception("dropped"));
+			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.next(singleItem());
+			                   ts.next(droppedItem());
 			                   assertThat(nextDropped.get()).isTrue();
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorErrorVerifierFusedBothConditionalTryNext(Scenario<I, O> scenario) {
-		return StepVerifier.create(scenario.finiteSource()
-		                                   .as(scenario.body())
-		                                   .filter(d -> true), 2);
+	final StepVerifier.Step<O> operatorNextVerifierFusedBothConditionalTryNext(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body())
+		                                                          .filter(filter -> true),
+				3);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -625,35 +680,47 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		AtomicBoolean errorDropped = new AtomicBoolean();
 		AtomicBoolean nextDropped = new AtomicBoolean();
+		String dropped = droppedException().getMessage();
 		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage("dropped");
+			assertThat(e).hasMessage(dropped);
 			errorDropped.set(true);
 		});
 		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo("dropped");
+			assertThat(d).isEqualTo(droppedItem());
 			nextDropped.set(true);
 		});
 		return StepVerifier.create(up.as(scenario.body())
-		                             .filter(d -> true))
+		                             .filter(filter -> true))
 		                   .then(() -> {
-			                   up.actual.onError(new Exception("dropped"));
+			                   up.actual.onError(exception());
 
 			                   //verify drop path
-			                   up.actual.onError(new Exception("dropped"));
+			                   up.actual.onError(droppedException());
 			                   assertThat(errorDropped.get()).isTrue();
 
-			                   up.actual.onNext(singleItem());
+			                   up.actual.onNext(droppedItem());
 			                   assertThat(nextDropped.get()).isTrue();
 
 			                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
 				                   nextDropped.set(false);
 				                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-						                   singleItem());
+						                   droppedItem());
 				                   assertThat(nextDropped.get()).isTrue();
 			                   }
 			                   up.actual.onComplete();
 		                   });
 	}
+
+	final StepVerifier.Step<O> operatorNextVerifier(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).hide()
+		                                                          .as(scenario.body()));
+	}
+
+	final StepVerifier.Step<O> operatorNextVerifierFusedTryNext(Scenario<I, O> scenario) {
+		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body()),
+				3);
+	}
+
 
 	@After
 	public void resetHooks() {
