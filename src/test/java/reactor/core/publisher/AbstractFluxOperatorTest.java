@@ -115,75 +115,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	}
 
 	@Test
-	public void errorWithUserProvidedCallback() {
-		for (Scenario<I, O> scenario : errorInOperatorCallback()) {
-			if (scenario == null) {
-				continue;
-			}
-
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
-
-			if (verifier == null) {
-				verifier = step -> step.verifyErrorMessage("dropped");
-			}
-
-			int fusion = scenario.fusionMode();
-
-			verifier.accept(this.operatorVerifier(scenario));
-
-			verifier.accept(this.operatorVerifierFused(scenario));
-
-			if ((fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.operatorVerifierFusedSync(scenario));
-				verifier.accept(this.operatorVerifierFusedConditionalSync(scenario));
-			}
-
-			if ((fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.operatorVerifierFusedAsync(scenario));
-				verifier.accept(this.operatorVerifierFusedConditionalAsync(scenario));
-				this.operatorVerifierFusedAsyncState(scenario);
-				this.operatorVerifierFusedConditionalAsyncState(scenario);
-			}
-
-			verifier.accept(this.operatorVerifierTryNext(scenario));
-			verifier.accept(this.operatorVerifierBothConditional(scenario));
-			verifier.accept(this.operatorVerifierConditionalTryNext(scenario));
-			verifier.accept(this.operatorVerifierFusedTryNext(scenario));
-			verifier.accept(this.operatorVerifierFusedBothConditional(scenario));
-			verifier.accept(this.operatorVerifierFusedBothConditionalTryNext(scenario));
-
-			resetHooks();
-		}
-	}
-
-	@Test
-	public void errorWithUpstreamFailure() {
-		for (Scenario<I, O> scenario : errorFromUpstreamFailure()) {
-			if (scenario == null) {
-				continue;
-			}
-
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
-
-			if (verifier == null) {
-				verifier = step -> step.verifyErrorMessage("dropped");
-			}
-
-			verifier.accept(this.operatorErrorSourceVerifier(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFused(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditional(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
-
-			resetHooks();
-		}
-	}
-
-	@Test
 	@SuppressWarnings("unchecked")
-	public void assertPrePostState() {
-		for (Scenario<I, O> scenario : simpleAssert()) {
+	public final void assertPrePostState() {
+		for (Scenario<I, O> scenario : scenarios_touchAndAssertState()) {
 			if (scenario == null) {
 				continue;
 			}
@@ -281,18 +215,114 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		}
 	}
 
+	@Test
+	public final void errorWithUserProvidedCallback() {
+		for (Scenario<I, O> scenario : scenarios_errorInOperatorCallback()) {
+			if (scenario == null) {
+				continue;
+			}
+
+			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
+
+			if (verifier == null) {
+				verifier = step -> step.verifyErrorMessage("dropped");
+			}
+
+			int fusion = scenario.fusionMode();
+
+			verifier.accept(this.operatorErrorVerifier(scenario));
+
+			verifier.accept(this.operatorErrorVerifierFused(scenario));
+
+			if ((fusion & Fuseable.SYNC) != 0) {
+				verifier.accept(this.operatorErrorVerifierFusedSync(scenario));
+				verifier.accept(this.operatorErrorVerifierFusedConditionalSync(scenario));
+			}
+
+			if ((fusion & Fuseable.ASYNC) != 0) {
+				verifier.accept(this.operatorErrorVerifierFusedAsync(scenario));
+				verifier.accept(this.operatorErrorVerifierFusedConditionalAsync(scenario));
+				this.operatorErrorVerifierFusedAsyncState(scenario);
+				this.operatorErrorVerifierFusedConditionalAsyncState(scenario);
+			}
+
+			verifier.accept(this.operatorErrorVerifierTryNext(scenario));
+			verifier.accept(this.operatorErrorVerifierBothConditional(scenario));
+			verifier.accept(this.operatorErrorVerifierConditionalTryNext(scenario));
+			verifier.accept(this.operatorErrorVerifierFusedTryNext(scenario));
+			verifier.accept(this.operatorErrorVerifierFusedBothConditional(scenario));
+			verifier.accept(this.operatorErrorVerifierFusedBothConditionalTryNext(scenario));
+
+			resetHooks();
+		}
+	}
+
+	@Test
+	public final void errorWithUpstreamFailure() {
+		for (Scenario<I, O> scenario : scenarios_errorFromUpstreamFailure()) {
+			if (scenario == null) {
+				continue;
+			}
+
+			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
+
+			if (verifier == null) {
+				verifier = step -> step.verifyErrorMessage("dropped");
+			}
+
+			verifier.accept(this.operatorErrorSourceVerifier(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierTryNext(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierFused(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierConditional(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
+
+			resetHooks();
+		}
+	}
+
+	@Test
+	public final void threeNextAndComplete() {
+		for (Scenario<I, O> scenario : scenarios_threeNextAndComplete()) {
+			if (scenario == null) {
+				continue;
+			}
+
+			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
+
+			if (verifier == null) {
+				continue;
+			}
+
+			verifier.accept(this.operatorErrorSourceVerifier(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierTryNext(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierFused(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierConditional(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
+			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
+
+			resetHooks();
+		}
+	}
+
+
 	//errorInOperatorCallbackVerification
-	protected List<Scenario<I, O>> errorInOperatorCallback() {
+	protected List<Scenario<I, O>> scenarios_errorInOperatorCallback() {
+		return Collections.emptyList();
+	}
+
+	//errorInOperatorCallbackVerification
+	protected List<Scenario<I, O>> scenarios_threeNextAndComplete() {
 		return Collections.emptyList();
 	}
 
 	//assert
-	protected List<Scenario<I, O>> simpleAssert() {
-		return errorFromUpstreamFailure();
+	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
+		return scenarios_errorFromUpstreamFailure();
 	}
 
 	//errorFromUpstreamFailureVerification
-	protected List<Scenario<I, O>> errorFromUpstreamFailure() {
+	protected List<Scenario<I, O>> scenarios_errorFromUpstreamFailure() {
 		return Collections.emptyList();
 	}
 
@@ -309,13 +339,13 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		return (I) "dropped";
 	}
 
-	final StepVerifier.Step<O> operatorVerifier(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifier(Scenario<I, O> scenario) {
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("dropped"));
 		return StepVerifier.create(scenario.finiteSource().hide()
 		                                                 .as(scenario.body()), 2);
 	}
 
-	final StepVerifier.Step<O> operatorVerifierTryNext(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierTryNext(Scenario<I, O> scenario) {
 		TestPublisher<I> ts = TestPublisher.create();
 
 		return StepVerifier.create(ts.flux()
@@ -375,25 +405,25 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFused(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFused(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body()));
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedSync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedSync(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body()))
 		                   .expectFusion(Fuseable.SYNC);
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedConditionalSync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedConditionalSync(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body())
 		                                   .filter(d -> true))
 		                   .expectFusion(Fuseable.SYNC);
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedAsync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedAsync(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		return StepVerifier.create(up.as(scenario.body()))
 		                   .expectFusion(Fuseable.ASYNC)
@@ -401,7 +431,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	}
 
 	@SuppressWarnings("unchecked")
-	final void operatorVerifierFusedAsyncState(Scenario<I, O> scenario) {
+	final void operatorErrorVerifierFusedAsyncState(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		up.onNext(singleItem());
 		up.onNext(singleItem());
@@ -433,7 +463,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	}
 
 	@SuppressWarnings("unchecked")
-	final void operatorVerifierFusedConditionalAsyncState(Scenario<I, O> scenario) {
+	final void operatorErrorVerifierFusedConditionalAsyncState(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		up.onNext(singleItem());
 		up.onNext(singleItem());
@@ -465,7 +495,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		            .verify();
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedConditionalAsync(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedConditionalAsync(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		return StepVerifier.create(up.as(scenario.body())
 		                             .filter(d -> true))
@@ -473,7 +503,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		                   .then(() -> up.onNext(singleItem()));
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedTryNext(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body()), 2);
 	}
@@ -511,14 +541,14 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorVerifierConditionalTryNext(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierConditionalTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .hide()
 		                                   .as(scenario.body())
 		                                   .filter(d -> true), 2);
 	}
 
-	final StepVerifier.Step<O> operatorVerifierBothConditional(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierBothConditional(Scenario<I, O> scenario) {
 		TestPublisher<I> ts = TestPublisher.create();
 
 		return StepVerifier.create(ts.flux()
@@ -527,7 +557,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		                   .then(() -> testPublisherSource(ts));
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedBothConditional(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedBothConditional(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body())
 		                                   .filter(d -> true));
@@ -584,7 +614,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		                   });
 	}
 
-	final StepVerifier.Step<O> operatorVerifierFusedBothConditionalTryNext(Scenario<I, O> scenario) {
+	final StepVerifier.Step<O> operatorErrorVerifierFusedBothConditionalTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(scenario.finiteSource()
 		                                   .as(scenario.body())
 		                                   .filter(d -> true), 2);

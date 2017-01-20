@@ -27,7 +27,7 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 
 	@Override
-	protected List<Scenario<String, Integer>> errorInOperatorCallback() {
+	protected List<Scenario<String, Integer>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> {
 					throw new RuntimeException("dropped");
@@ -38,7 +38,7 @@ public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 	}
 
 	@Override
-	protected List<Scenario<String, Integer>> errorFromUpstreamFailure() {
+	protected List<Scenario<String, Integer>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> 1))
 		);
