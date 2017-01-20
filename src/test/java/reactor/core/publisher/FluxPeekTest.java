@@ -174,7 +174,25 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 				}, null, () -> {throw new RuntimeException("dropped");}, null, null)
 				                    .doOnError(s -> {
 										throw Exceptions.errorCallbackNotImplemented(new Exception("unsupported"));
-				}), Fuseable.NONE, step -> step.thenCancel().verify())
+				}), Fuseable.NONE, step -> step.thenCancel().verify()),
+
+				Scenario.from(f -> Flux.doOnSignal(f, null, null, s -> {
+					if(s.getMessage().equals("dropped")){
+						throw new RuntimeException("dropped");
+					}
+				}, null, () -> {throw new RuntimeException("dropped");}, null, null)
+				                       .doOnError(s -> {
+					                       throw Exceptions.errorCallbackNotImplemented(s);
+				                       }), Fuseable.NONE, step -> step.thenCancel().verify()),
+
+				Scenario.from(f -> Flux.doOnSignal(f, null, null, s -> {
+					if(s.getMessage().equals("dropped")){
+						throw new RuntimeException("dropped");
+					}
+				}, null, () -> {throw new RuntimeException("dropped");}, null, null)
+				                       .doOnError(s -> {
+					                       throw new RuntimeException("dropped");
+				                       }), Fuseable.NONE)
 
 
 		);

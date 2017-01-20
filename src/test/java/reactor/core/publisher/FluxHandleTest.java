@@ -26,7 +26,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -501,36 +500,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void noFusionOnConditionalThreadBarrier() {
-		StepVerifier.create(Flux.just("test", "test2")
-		                        .as(this::passThrough)
-		                        .distinct())
-		            .expectFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.NONE)
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void prematureCompleteFusedSync() {
-		StepVerifier.create(Flux.just("test")
-		                        .as(this::passThrough)
-		                        .filter(t -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void dropHandleFusedSync() {
-		StepVerifier.create(Flux.just("test", "test2")
-		                        .handle((data, s) -> {
-		                        })
-		                        .filter(t -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .verifyComplete();
-	}
-
-	@Test
 	public void handleFusedCancel() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .as(this::passThrough), 2)
@@ -679,4 +648,34 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		});
 	}
 
+
+	@Test
+	public void noFusionOnConditionalThreadBarrier() {
+		StepVerifier.create(Flux.just("test", "test2")
+		                        .as(this::passThrough)
+		                        .distinct())
+		            .expectFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.NONE)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void prematureCompleteFusedSync() {
+		StepVerifier.create(Flux.just("test")
+		                        .as(this::passThrough)
+		                        .filter(t -> true))
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNext("test")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void dropHandleFusedSync() {
+		StepVerifier.create(Flux.just("test", "test2")
+		                        .handle((data, s) -> {
+		                        })
+		                        .filter(t -> true))
+		            .expectFusion(Fuseable.SYNC)
+		            .verifyComplete();
+	}
 }
